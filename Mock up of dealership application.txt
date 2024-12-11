@@ -1,0 +1,155 @@
+"""
+Program : carDealerShip.py
+Creator : Alicia Davis
+Last time updated : 12/06/2024
+Purpose : A management system for a car dealership
+"""
+
+import customtkinter as ctk
+from tkinter import messagebox
+from tkinter import ttk
+
+# Initialize the main window
+class CarDealerShipApp:
+    def _init_(self, root):
+        self.root = root
+        self.root.title("Car Dealership Management System")
+        self.root.geometry("800x600")
+
+        # Car inventory
+        self.inventory = []
+
+        # Create main menu buttons
+        self.create_main_menu()
+
+    def create_main_menu(self):
+        # Button for managing inventory
+        ctk.CTkButton(self.root, text="Manage Inventory", width=200, command=self.manage_inventory).grid(row=0, column=0, padx=10, pady=10)
+        ctk.CTkButton(self.root, text="Process Sale", width=200, command=self.process_sale).grid(row=1, column=0, padx=10, pady=10)
+        ctk.CTkButton(self.root, text="Sales Report", width=200, command=self.sales_report).grid(row=2, column=0, padx=10, pady=10)
+        ctk.CTkButton(self.root, text="Exit", width=200, command=self.root.quit).grid(row=3, column=0, padx=10, pady=10)
+
+    def manage_inventory(self):
+        # Open window for inventory management
+        inventory_window = ctk.CTkToplevel(self.root)
+        inventory_window.title("Manage Inventory")
+
+        #An addition for entry field for information on car
+        fields = ["Make", "Model", "Year", "Price", "Quantity"]
+        self.entries = {field: ctk.CTkEntry(inventory_window) for field in fields}
+
+        for i, field in enumerate(fields) :
+            ctk.CTkLabel(inventory_window, text=field).grid(row=1, column=0, padx=10, pady=5)
+            self.entries[field].grid(row=1, column=1, padx=10, pady=5)
+
+        # Car addition to inventory
+        ctk.CTkButton(inventory_window, text="Add Car", command=self.add_car).grid(row=5, column=0, columnspan=2, pady=10)
+
+        # Show car inventory with tree view
+        self.tree = ttk.Treeview(inventory_window, columns=("Make", "Model", "Price", "Quantity"), show="headings")
+        for col in self.tree["columns"]:
+            self.tree.heading(col, text=col)
+        self.tree.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+
+        # Populate tree view for inventory
+        self.populate_inventory()
+
+    def add_car(self):
+        #Addition to car inventory
+        car_info = {field: self.entries[field].get() for field in self.entries}
+
+        #Validate input fields
+        if not all(car_info.values()):
+            messagebox.showerror("Input Error", "All fields must be filled in!")
+            return
+
+        try:
+            car_info["Price"] = float(car_info["Price"])
+            car_info["Quantity"] = int(car_info["Quantity"])
+        except ValueError:
+            messagebox.showerror("Input Error", "Price must be a number amd Quantity must be an integer!")
+            return
+
+        # Include cars to inventory
+        self.inventory.append(car_info)
+        self.clear_entries()
+        self.populate_inventory()
+
+    def clear_entries(self):
+        # Clear all of the entry fields
+        for entry in self.entries.values():
+            entry.delete(0, ctk.END)
+
+    def populate_inventory(self):
+        # Populate tree view from inventory with present inventory data
+        for item in self.tree.get_children():
+            self.delete.(item)
+
+        # Insert different rows into Treeview
+        for car in self.inventory:
+            self.tree.insert("", "end", values=(car["Make"], car["Model"], car["Price"], car["Quantity"]))
+
+    def process_sale(self):
+        # Open sale window
+        sale_window = ctk.CTkToplevel(self.root)
+        sale_window.title("Process Sale")
+
+        #Add the input fields for the details to sale
+        ctk.CTkLabel(sale_window, text="Customer Name").grid(row=0, column=0)
+        customer_name_entry = ctk.CTkEntry(sale_window)
+        customer_name_entry.grid(row=0, column=1)
+
+        ctk.CTkLabel(sale_window, text="Car").grid(row=1, column=0)
+        car_combobox = ttk.Combobox(sale_window, values=[f"{car['Make']} {car['Model']}" for car in self.inventory])
+        car_combobox.grid(row=1, column=1)
+
+        ctk.CTkLabel(sale_window, text="Quantity").grid(row=2, column=0)
+        quantity_entry = ctk.CTkEntry(sale_window)
+        quantity_entry.grid(row=2, column=1)
+
+        #Add a button so sales can process
+        ctk.CTkButton(sale_window, text="Process Sale", command=lambda: self.complete_sale(customer_name_entry, car_combobox, quantity_entry, sale_window)).grid(row=3, column=0, columnspan=2, pady=10)
+
+    def complete_sale(self, customer_name_entry, car_combobox, quantity_entry, sale_window):
+        # Complete the processing sales
+        customer_name = customer_name_entry.get()
+        selected_car = car_combobox.get()
+        try:
+            quantity_sold = int(quantity_entry.get())
+        except ValueError:
+            messagebox.showerror("Input Error", "Quantity must be a number!")
+            return
+
+        # Validate sale details
+        if not customer_name or not selected_car or not quantity_sold:
+            messagebox.showerror("Input Error", "All fields must be filled!")
+
+        car_make, car_model = selected_car.split(" ")
+        car = next((car for car in self.inventory if car["Make"] == car_make and car["Model"] == car_model), None)
+
+        if not car or car["Quantity"] < quantity_sold:
+            messagebox.showerror("Stock Error", "Not enough stock availability!")
+            return
+
+        # Confimation of sale and update Inventory
+        car["Quantity"] -= quantity_sold
+        messagebox.showinfo("Sale Succesful", f"Sale completed for {quantity_sold} {car_make} {car_model}(s)")
+        sale_window.destroy()
+        self.populate_inventory()
+
+    def sales_report(self):
+        # Active sales report window
+        report_window = ctk.CTkToplevel(self.root)
+        report_window.title("Sales Report")
+
+        # Calculate and show amount of sales
+        total_sales = sum([car["Price"] * (car["Quantity"]) for car in self.inventory])
+        ctk.CTkLabel(report_window, text=f"Total Sales: ${total_sales:.2f}".grid(row=0, column=0, padx=10, pady=10)
+
+        # Add finish button
+        ctk.CTkButton(report_window, text="Close", command=report_window.destroy).grid(row=1, column=0, padx=10, pady=10)
+
+#Initialize the main functions and applications in general
+root = ctk.CTk()
+app = CarDealerShipApp(root)
+root.mainlopp()
